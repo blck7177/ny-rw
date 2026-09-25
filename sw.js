@@ -1,6 +1,6 @@
 // NYC Drift — service worker. Caches the app shell so the generator works
 // offline once the app has loaded. Map tiles are NOT cached.
-var CACHE = "nyc-drift-v1";
+var CACHE = "nyc-drift-v2";
 var SHELL = [
   "./",
   "index.html",
