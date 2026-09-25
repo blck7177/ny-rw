@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NYC Drift</title>
+  <meta name="description" content="A random urban wandering game. One button, one truly random point in Manhattan below 96th Street.">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NYC Drift">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <div class="brand">
+        <h1 class="wordmark">NYC<br>DRIFT</h1>
+        <p class="tagline">RANDOM URBAN DRIFT</p>
+      </div>
+      <p class="zone-label">MANHATTAN<br>BELOW 96TH</p>
+    </header>
+
+    <section class="map-wrap" aria-label="Map">
+      <div id="map" class="map"></div>
+      <span class="map-corner map-corner--tl" aria-hidden="true"></span>
+      <span class="map-corner map-corner--br" aria-hidden="true"></span>
+    </section>
+
+    <!-- Before generation -->
+    <section id="idle" class="panel">
+      <p class="prompt">Tap RANDOMIZE. The point is chosen locally on your phone.</p>
+      <button id="randomize" class="btn btn--primary" type="button">RANDOMIZE</button>
+      <div class="minor-row minor-row--single">
+        <button class="btn btn--minor" type="button" data-action="replay">REPLAY SEED</button>
+      </div>
+    </section>
+
+    <!-- After generation -->
+    <section id="result" class="panel" hidden>
+      <div class="coords" aria-live="polite">
+        <span class="coord-label">LAT</span>
+        <output id="lat" class="coord">00.000000</output>
+        <span class="coord-label">LNG</span>
+        <output id="lng" class="coord">00.000000</output>
+      </div>
+      <dl class="meta">
+        <div><dt>SEED</dt><dd id="seed">DRIFT-00000000</dd></div>
+        <div><dt>ROLL</dt><dd id="roll">1</dd></div>
+      </dl>
+
+      <a id="accept" class="btn btn--primary" href="#" rel="noopener">ACCEPT FATE</a>
+      <button id="reroll" class="btn btn--secondary" type="button">REROLL</button>
+
+      <div class="minor-row">
+        <button class="btn btn--minor" type="button" data-action="copy">COPY</button>
+        <button class="btn btn--minor" type="button" data-action="replay">REPLAY SEED</button>
+        <button class="btn btn--minor" type="button" data-action="share">SHARE</button>
+      </div>
+    </section>
+
+    <section class="rule">
+      <h2 class="rule-title">V1 RULE</h2>
+      <p>The generator chooses a point inside the Manhattan drift zone south of 96th St. If the exact pin is inside a building, restricted property, construction, or another location that cannot legally be reached, begin from the nearest public pedestrian point. Wander for 30–60 minutes.</p>
+      <p class="rule-strong">Do not reroll because a place looks boring.</p>
+    </section>
+
+    <section id="log" class="log" hidden>
+      <h2 class="rule-title">REROLL LOG <span class="log-note">THIS SESSION</span></h2>
+      <ol id="log-list" class="log-list"></ol>
+    </section>
+
+    <footer class="disclaimer">
+      <p>The dashed outline is an approximate boundary for this drift game. It is not a legal, official, or property boundary. Access, safety and legality are your call: use on-site judgment, obey signs and closures, and stay on public ways.</p>
+      <p>Map data © OpenStreetMap contributors. Points are generated on-device; nothing is sent to a server.</p>
+    </footer>
+  </main>
+
+  <!-- Reroll reason -->
+  <div id="reroll-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="reroll-title">
+    <div class="sheet">
+      <h2 id="reroll-title" class="sheet-title">WHY REROLL?</h2>
+      <p class="sheet-note">Boring is not a reason.</p>
+      <div class="reasons">
+        <button class="btn btn--reason" type="button" data-reason="Inaccessible / no legal public approach">Inaccessible / no legal public approach</button>
+        <button class="btn btn--reason" type="button" data-reason="Private / restricted property">Private / restricted property</button>
+        <button class="btn btn--reason" type="button" data-reason="Construction / closure">Construction / closure</button>
+        <button class="btn btn--reason" type="button" data-reason="On-site safety veto">On-site safety veto</button>
+      </div>
+      <button class="btn btn--minor btn--block" type="button" data-close>CANCEL</button>
+    </div>
+  </div>
+
+  <!-- Replay seed -->
+  <div id="replay-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="replay-title">
+    <form id="replay-form" class="sheet" novalidate>
+      <h2 id="replay-title" class="sheet-title">REPLAY SEED</h2>
+      <label class="sheet-note" for="seed-input">Enter DRIFT-1A2B3C4D or 1A2B3C4D</label>
+      <input id="seed-input" class="seed-input" type="text" inputmode="text" autocomplete="off"
+             autocapitalize="characters" autocorrect="off" spellcheck="false"
+             placeholder="DRIFT-1A2B3C4D" maxlength="20">
+      <p id="seed-error" class="seed-error" hidden>Not a valid seed. Use up to 8 hex digits (0–9, A–F).</p>
+      <button class="btn btn--primary" type="submit">REPLAY</button>
+      <button class="btn btn--minor btn--block" type="button" data-close>CANCEL</button>
+    </form>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="js/zone.js"></script>
+  <script src="js/drift.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
